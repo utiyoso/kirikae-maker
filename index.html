@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>きりかえメーカー｜うちよそ研究所</title>
+<meta name="description" content="複数の画像を切り替え演出つきでつなげて、APNG / WebP のアニメ画像として書き出せる、ブラウザで動くツール。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pink:#f08aa8;
+  --pink-deep:#d9547e;
+  --pink-soft:#fde7ee;
+  --pink-pale:#fff5f8;
+  --ink:#4a3b42;
+  --muted:#8a7881;
+  --line:#f3d3dd;
+  --white:#fff;
+  --radius:18px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--ink);background:var(--white);
+  font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  line-height:1.8;font-size:16px;
+}
+img{max-width:100%;height:auto;display:block}
+a{color:var(--pink-deep)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+
+/* header */
+header.top{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:2px dotted var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:58px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;text-decoration:none;color:var(--ink)}
+.brand svg{width:30px;height:30px}
+nav a{white-space:nowrap;margin-left:18px;text-decoration:none;color:var(--muted);font-size:14px;font-weight:500}
+nav a:hover{color:var(--pink-deep)}
+
+/* hero */
+.hero{position:relative;overflow:hidden;text-align:center;padding:52px 0 44px;
+  background:
+    radial-gradient(circle at 12% 20%, var(--pink-soft) 0 90px, transparent 91px),
+    radial-gradient(circle at 90% 78%, var(--pink-soft) 0 120px, transparent 121px),
+    radial-gradient(circle at 78% 12%, #ffeef3 0 46px, transparent 47px),
+    var(--pink-pale);
+}
+.eyebrow{display:inline-block;background:#fff;border:2px solid var(--pink);color:var(--pink-deep);border-radius:999px;padding:2px 14px;font-size:13px;font-weight:700;margin-bottom:12px}
+.hero h1{font-size:clamp(26px,5vw,40px);line-height:1.35;margin:0 0 12px;letter-spacing:.02em}
+.hero h1 span{background:linear-gradient(transparent 62%, #ffc9d9 62%);padding:0 4px}
+.hero p.lead{max-width:620px;margin:0 auto;color:var(--muted)}
+.note{font-size:13px;color:var(--muted);margin-top:14px}
+
+/* sections */
+section{padding:56px 0}
+section.alt{background:var(--pink-pale)}
+h2{text-align:center;font-size:clamp(22px,3.4vw,28px);margin:0 0 6px}
+h2::after{content:"";display:block;width:56px;height:6px;border-radius:6px;background:repeating-linear-gradient(90deg,var(--pink) 0 10px,transparent 10px 16px);margin:10px auto 0}
+.sub{text-align:center;color:var(--muted);margin:14px 0 30px}
+
+/* parts */
+.card{background:#fff;border:2px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:0 5px 0 var(--pink-soft)}
+.card h3{margin:0 0 10px;font-size:17px}
+.no{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--pink);color:#fff;font-weight:700;margin-right:8px;font-size:15px}
+.btn{display:inline-block;font:inherit;cursor:pointer;text-decoration:none;font-weight:700;border-radius:999px;padding:10px 24px;border:2px solid var(--pink-deep);transition:transform .15s;line-height:1.4}
+.btn:hover{transform:translateY(-2px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn.primary{background:var(--pink-deep);color:#fff;box-shadow:0 5px 0 #b63d63}
+.btn.ghost{background:#fff;color:var(--pink-deep);box-shadow:0 4px 0 var(--pink-soft)}
+.btn.sm{padding:3px 14px;font-size:13px;box-shadow:0 3px 0 var(--pink-soft)}
+input[type=number],select,input[type=text]{
+  font:inherit;font-size:14.5px;color:var(--ink);background:#fff;border:2px solid var(--line);border-radius:12px;padding:3px 10px;max-width:100%;
+}
+input[type=number]{width:84px}
+input:focus,select:focus{outline:none;border-color:var(--pink)}
+input[type=color]{width:42px;height:32px;padding:0;border:2px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;vertical-align:middle}
+input[type=range]{accent-color:var(--pink-deep);width:100%}
+label.chk{cursor:pointer}
+input[type=checkbox],input[type=radio]{accent-color:var(--pink-deep);width:16px;height:16px;vertical-align:-3px;margin-right:4px}
+.row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:0 0 10px}
+.row>b{min-width:5.5em;font-size:14px;color:var(--muted);font-weight:500}
+small.hint{color:var(--muted);font-size:12.5px}
+
+/* drop */
+.drop{border:3px dashed var(--pink);border-radius:var(--radius);background:var(--pink-pale);text-align:center;padding:26px 16px;margin-bottom:18px;transition:background .15s}
+.drop.over{background:var(--pink-soft)}
+.drop p{margin:0 0 12px;color:var(--muted)}
+.drop .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+/* bulk */
+.bulk{background:#fff;border:2px dashed var(--line);border-radius:var(--radius);padding:12px 18px;margin-bottom:18px}
+.bulk .row{margin:0;padding:2px 0}
+
+/* slide list */
+.slides{display:flex;flex-direction:column;gap:0}
+.slide{background:#fff;border:2px solid var(--line);border-radius:var(--radius);padding:12px;box-shadow:0 4px 0 var(--pink-soft);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.slide.dragover{border-color:var(--pink-deep);background:var(--pink-pale)}
+.grip{cursor:grab;color:var(--pink);font-size:20px;line-height:1;padding:4px 2px;user-select:none}
+.thumb{position:relative;width:132px;height:84px;flex:none;border-radius:10px;overflow:hidden;background:
+  conic-gradient(#eee 25%,#fff 0 50%,#eee 0 75%,#fff 0) 0 0/14px 14px}
+.thumb img{width:100%;height:100%;object-fit:contain}
+.thumb .idx{position:absolute;left:4px;top:4px;background:var(--pink);color:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;font-size:12px;font-weight:700}
+.sbody{flex:1 1 220px;min-width:0}
+.sname{font-weight:700;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sname small{color:var(--muted);font-weight:400;margin-left:6px}
+.sctl{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:4px;font-size:14px}
+.sact{display:flex;gap:6px;flex-wrap:wrap}
+.conn{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:center;padding:8px 10px;font-size:14px;color:var(--pink-deep);font-weight:700}
+.conn.off{opacity:.45}
+.conn select,.conn input{font-weight:400}
+.empty{text-align:center;color:var(--muted);padding:20px}
+
+/* preview */
+.two{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:820px){.two{grid-template-columns:1fr}}
+.stage{border-radius:12px;overflow:hidden;background:conic-gradient(#eee 25%,#fff 0 50%,#eee 0 75%,#fff 0) 0 0/16px 16px;border:2px solid var(--line);line-height:0}
+.stage canvas{width:100%;height:auto;display:block}
+.ctrl{display:flex;gap:10px;align-items:center;margin-top:10px}
+.ctrl .time{font-size:13px;color:var(--muted);white-space:nowrap;min-width:7.5em;text-align:right}
+.stats{margin-top:8px;font-size:13.5px;color:var(--muted)}
+.warn{color:var(--pink-deep);font-weight:700}
+
+/* export */
+.bar{height:12px;border-radius:999px;background:var(--pink-soft);overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;width:0;background:repeating-linear-gradient(135deg,var(--pink-deep) 0 10px,var(--pink) 10px 20px);transition:width .1s}
+.result{margin-top:18px;display:none;text-align:center}
+.result .stage{display:inline-block;max-width:100%}
+.result .stage img{max-width:100%;max-height:420px;width:auto}
+.result p{margin:10px 0}
+.err{color:#c0392b;font-weight:700;margin-top:10px}
+
+ul.tips{margin:0;padding-left:1.2em;color:var(--muted);font-size:14.5px}
+ul.tips li{margin-bottom:6px}
+
+footer{background:var(--pink-soft);text-align:center;padding:30px 0 36px;font-size:14px;color:var(--muted)}
+footer a{margin:0 8px;font-weight:700}
+footer p{margin:8px 0 0}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 20px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:30}
+.toast.show{opacity:.95}
+@media (max-width:640px){
+  nav a{margin-left:10px;font-size:13px}
+  section{padding:42px 0}
+  .thumb{width:100px;height:64px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="6" width="18" height="18" rx="5" fill="#fde7ee" stroke="#f08aa8" stroke-width="2"/><rect x="12" y="9" width="18" height="18" rx="5" fill="#f08aa8" opacity=".9"/></svg>
+      きりかえメーカー
+    </a>
+    <nav>
+      <a href="#step1">画像</a>
+      <a href="#step2">プレビュー</a>
+      <a href="#step3">書き出し</a>
+      <a href="#tips">メモ</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="hero">
+    <div class="wrap">
+      <div class="eyebrow">ブラウザで動く／インストール不要</div>
+      <h1>画像をつないで、<br><span>切り替え演出つきのアニメに。</span></h1>
+      <p class="lead">複数の画像を並べて、切り替えごとに演出を選ぶだけ。<br>
+        APNG・アニメWebP として書き出せます。</p>
+      <p class="note">画像はパソコンの中だけで処理され、外部には送信されません。</p>
+    </div>
+  </div>
+
+  <section id="step1">
+    <div class="wrap">
+      <h2>1. 画像を並べる</h2>
+      <p class="sub">画像を追加して、表示時間と「次への切り替え演出」を決めます。</p>
+
+      <div class="drop" id="drop">
+        <p>ここに画像をドラッグ＆ドロップ（貼り付け Ctrl+V もできます）</p>
+        <div class="btns">
+          <button class="btn primary" id="addBtn" type="button">画像を選ぶ</button>
+          <button class="btn ghost" id="sampleBtn" type="button">サンプルで試す</button>
+        </div>
+        <input type="file" id="file" accept="image/*" multiple hidden>
+      </div>
+
+      <div class="bulk">
+        <div class="row">
+          <b>一括設定</b>
+          <label>表示 <input type="number" id="bHold" min="0.1" max="60" step="0.1" value="1.5"> 秒</label>
+          <label>演出 <select id="bTrans"></select></label>
+          <label>切替 <input type="number" id="bDur" min="0.1" max="10" step="0.1" value="0.8"> 秒</label>
+          <button class="btn ghost sm" id="bApply" type="button">すべてに適用</button>
+          <button class="btn ghost sm" id="bReroll" type="button">ランダムを振り直す</button>
+        </div>
+        <small class="hint">ここを変えると、これから追加する画像の初期値にもなります。個別に変えたいときは下の各カードで。</small>
+      </div>
+
+      <div class="slides" id="slides"></div>
+    </div>
+  </section>
+
+  <section id="step2" class="alt">
+    <div class="wrap">
+      <h2>2. プレビューと全体の設定</h2>
+      <p class="sub">書き出す前に、動きを確認できます。</p>
+      <div class="two">
+        <div class="card">
+          <div class="stage"><canvas id="pv" width="640" height="360"></canvas></div>
+          <div class="ctrl">
+            <button class="btn ghost sm" id="play" type="button">⏸ 停止</button>
+            <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="再生位置">
+            <span class="time" id="tlabel">0.0 / 0.0 秒</span>
+          </div>
+          <div class="stats" id="stats"></div>
+        </div>
+
+        <div class="card">
+          <h3>全体の設定</h3>
+          <div class="row"><b>出力サイズ</b>
+            <input type="number" id="sw" min="16" max="4096" step="1"> ×
+            <input type="number" id="sh" min="16" max="4096" step="1"> px
+          </div>
+          <div class="row"><b></b>
+            <select id="preset">
+              <option value="">サイズのプリセット…</option>
+              <option value="512x512">512 × 512</option>
+              <option value="800x800">800 × 800</option>
+              <option value="800x450">800 × 450（16:9）</option>
+              <option value="1280x720">1280 × 720（HD）</option>
+              <option value="1080x1080">1080 × 1080</option>
+              <option value="400x400">400 × 400</option>
+            </select>
+            <button class="btn ghost sm" id="fitFirst" type="button">1枚目に合わせる</button>
+          </div>
+          <div class="row"><b>はめ方</b>
+            <select id="fit">
+              <option value="contain">全体を収める（余白あり）</option>
+              <option value="cover">枠いっぱいに（はみ出しを切る）</option>
+              <option value="stretch">引き伸ばす</option>
+            </select>
+          </div>
+          <div class="row"><b>背景</b>
+            <input type="color" id="bg" value="#ffffff">
+            <label class="chk"><input type="checkbox" id="trans"> 透明にする</label>
+          </div>
+          <div class="row"><b>つなぎ</b>
+            <label class="chk"><input type="checkbox" id="loopBack" checked> 最後→最初にも切り替えを入れる</label>
+          </div>
+          <div class="row"><b>動きの緩急</b>
+            <select id="easing">
+              <option value="inout">ゆっくり始まり、ゆっくり終わる</option>
+              <option value="out">速く始まり、ゆっくり終わる</option>
+              <option value="linear">一定の速さ</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="step3">
+    <div class="wrap">
+      <h2>3. 書き出す</h2>
+      <p class="sub">形式を選んで、書き出しボタンを押してください。</p>
+      <div class="card" style="max-width:720px;margin:0 auto">
+        <div class="row"><b>形式</b>
+          <label class="chk"><input type="radio" name="fmt" value="webp" checked> アニメWebP</label>
+          <label class="chk"><input type="radio" name="fmt" value="apng"> APNG</label>
+        </div>
+        <div class="row" id="qrow"><b>画質</b>
+          <input type="range" id="quality" min="10" max="100" value="90" style="max-width:240px">
+          <span id="qval">90</span>
+          <small class="hint">低いほど軽くなります</small>
+        </div>
+        <div class="row"><b>フレームレート</b>
+          <select id="fps">
+            <option>10</option><option>12</option><option selected>15</option><option>20</option><option>24</option><option>30</option>
+          </select> fps
+          <small class="hint">切り替え中のなめらかさ。大きいほど重くなります</small>
+        </div>
+        <div class="row"><b>繰り返し</b>
+          <label class="chk"><input type="radio" name="loopmode" value="inf" checked> 無限にくり返す</label>
+          <label class="chk"><input type="radio" name="loopmode" value="n"> 回数を決める</label>
+          <span id="loopN" style="display:none"><input type="number" id="loops" min="1" max="1000" step="1" value="1"> 回</span>
+        </div>
+        <div class="row"><b>容量の上限</b>
+          <label class="chk"><input type="checkbox" id="capOn" checked> 自動で収める</label>
+          <input type="number" id="cap" min="0.1" max="100" step="0.5" value="5"> MB
+          <small class="hint">超えたら、画質・サイズ・fps を自動で下げます</small>
+        </div>
+        <div style="text-align:center;margin-top:18px">
+          <button class="btn primary" id="export" type="button" disabled>書き出す</button>
+        </div>
+        <div class="stats" id="status" style="text-align:center"></div>
+        <div class="bar" id="bar" hidden><i id="barIn"></i></div>
+        <div class="err" id="err" hidden></div>
+        <div class="result" id="result">
+          <div class="stage"><img id="resImg" alt="書き出し結果"></div>
+          <p id="resInfo"></p>
+          <a class="btn primary" id="dl" download>ダウンロード</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tips" class="alt">
+    <div class="wrap">
+      <h2>メモ</h2>
+      <p class="sub">困ったときは、ここをどうぞ。</p>
+      <div class="card" style="max-width:720px;margin:0 auto">
+        <ul class="tips">
+          <li>画像は外部に送信されません。このページを閉じると、並べた内容は消えます。</li>
+          <li>表示している間は1コマにまとめて書き出すので、止まっている時間が長くても容量は増えません。</li>
+          <li>容量を減らすには、出力サイズを小さく／フレームレートを下げる／切り替えの秒数を短くしてみてください。</li>
+          <li>アニメWebPの書き出しは、Chrome・Edge・Firefox で使えます（Safari では書き出せません）。</li>
+          <li>APNG は「.png」の名前で保存されます。動いて見えるかどうかは、表示する側の対応しだいです。</li>
+          <li>GIFなど動きのある画像を入れたときは、最初の1コマだけが使われます。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <a href="https://utiyoso-uy.booth.pm/" target="_blank" rel="noopener">BOOTH</a>
+      <a href="https://x.com/utiyoso_uy" target="_blank" rel="noopener">X @utiyoso_uy</a>
+      <a href="../scenario-manager/">scenario_manager</a>
+    </div>
+    <p>© うちよそ研究所</p>
+  </div>
+</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+
+/* ---------- 演出の一覧 ---------- */
+const DIRS = {R:'右から', L:'左から', B:'下から', T:'上から'};
+const TRANS = [['cut','切り替えなし（パッと切替）'], ['fade','クロスフェード'], ['dipblack','暗転（黒を経由）'], ['dipwhite','白フラッシュ']];
+for (const k of ['slide','cover','wipe']) {
+  const name = {slide:'スライド', cover:'かぶせる', wipe:'ワイプ'}[k];
+  for (const d of 'RLBT') TRANS.push([k + d, `${name}（${DIRS[d]}）`]);
+}
+TRANS.push(['zoomIn','ズームイン'], ['zoomOut','ズームアウト'], ['circle','円で広がる'], ['circleClose','円で閉じる'],
+  ['blindsV','ブラインド（縦）'], ['blindsH','ブラインド（横）'], ['blur','ぼかし'], ['pixelate','モザイク'],
+  ['flip','カードめくり'], ['random','ランダム']);
+const POOL = TRANS.map(t => t[0]).filter(k => k !== 'cut' && k !== 'random');
+const VEC = {R:[1,0], L:[-1,0], B:[0,1], T:[0,-1]};
+const EASE = {
+  linear: p => p,
+  inout: p => p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2) / 2,
+  out: p => 1 - Math.pow(1 - p, 3),
+};
+
+/* ---------- 状態 ---------- */
+const S = {
+  slides: [], W: 640, H: 360, fit: 'contain', bg: '#ffffff', transparent: false,
+  loopBack: true, easing: 'inout', seed: 0,
+  def: {hold: 1.5, trans: 'fade', dur: 0.8},
+};
+let uid = 0, tl = {segs: [], total: 0};
+
+const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+function num(el, min, max, def) {
+  const v = parseFloat(el.value);
+  return clamp(isFinite(v) ? v : def, min, max);
+}
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+const optHtml = sel => TRANS.map(([k, n]) => `<option value="${k}"${k === sel ? ' selected' : ''}>${n}</option>`).join('');
+
+/* ---------- 画像の追加 ---------- */
+function addSlide(img, w, h, url, name) {
+  S.slides.push({id: ++uid, img, w, h, url, name, hold: S.def.hold, trans: S.def.trans, dur: S.def.dur, cache: {}});
+}
+function afterAdd(wasEmpty) {
+  if (wasEmpty && S.slides.length) fitToFirst();
+  renderList(); refresh();
+}
+async function addFiles(files) {
+  const wasEmpty = S.slides.length === 0;
+  for (const f of [...files].filter(f => f.type.startsWith('image/'))) {
+    const url = URL.createObjectURL(f);
+    const img = new Image(); img.src = url;
+    try { await img.decode(); }
+    catch (e) { URL.revokeObjectURL(url); toast(`${f.name} は読み込めませんでした`); continue; }
+    addSlide(img, img.naturalWidth, img.naturalHeight, url, f.name);
+  }
+  afterAdd(wasEmpty);
+}
+function addSamples() {
+  const wasEmpty = S.slides.length === 0;
+  const defs = [['#ffd6e3','#f08aa8','1'], ['#d6ecff','#6fa8dc','2'], ['#fff1c9','#f2b84b','3'], ['#dff5e1','#76c28a','4']];
+  defs.forEach(([a, b, t], i) => {
+    const c = mk(800, 450), x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 800, 450); g.addColorStop(0, a); g.addColorStop(1, b);
+    x.fillStyle = g; x.fillRect(0, 0, 800, 450);
+    x.fillStyle = 'rgba(255,255,255,.55)';
+    for (let k = 0; k < 6; k++) { x.beginPath(); x.arc(120 + k * 120, 90 + (k % 2) * 270, 46 + k * 4, 0, Math.PI * 2); x.fill(); }
+    x.fillStyle = '#fff'; x.font = 'bold 260px "Zen Maru Gothic",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.shadowColor = 'rgba(0,0,0,.2)'; x.shadowBlur = 16; x.fillText(t, 400, 235);
+    addSlide(c, 800, 450, c.toDataURL('image/png'), `サンプル${t}`);
+  });
+  afterAdd(wasEmpty);
+}
+function fitToFirst() {
+  const s = S.slides[0]; if (!s) return;
+  const r = Math.min(1, 800 / Math.max(s.w, s.h));
+  S.W = Math.max(16, Math.round(s.w * r)); S.H = Math.max(16, Math.round(s.h * r));
+  syncSizeInputs();
+}
+function syncSizeInputs() { $('#sw').value = S.W; $('#sh').value = S.H; }
+
+/* ---------- 画像リスト ---------- */
+let dragId = null;
+function renderList() {
+  const box = $('#slides'), n = S.slides.length;
+  if (!n) { box.innerHTML = '<div class="empty">まだ画像がありません。上のボタンから追加してください。</div>'; return; }
+  box.innerHTML = S.slides.map((s, i) => {
+    const last = i === n - 1;
+    const connLabel = last ? '▼ 最初へ戻る切り替え' : '▼ 次への切り替え';
+    const off = last && !S.loopBack;
+    return `<div class="slide" data-id="${s.id}">
+      <span class="grip" draggable="true" title="ドラッグで並べ替え">⠿</span>
+      <div class="thumb"><img src="${s.url}" alt=""><span class="idx">${i + 1}</span></div>
+      <div class="sbody">
+        <div class="sname">${esc(s.name)}<small>${s.w}×${s.h}</small></div>
+        <div class="sctl"><label>表示 <input type="number" data-f="hold" min="0.1" max="60" step="0.1" value="${s.hold}"> 秒</label></div>
+      </div>
+      <div class="sact">
+        <button class="btn ghost sm" data-act="up" type="button"${i === 0 ? ' disabled' : ''}>↑</button>
+        <button class="btn ghost sm" data-act="down" type="button"${last ? ' disabled' : ''}>↓</button>
+        <button class="btn ghost sm" data-act="dup" type="button">複製</button>
+        <button class="btn ghost sm" data-act="del" type="button">削除</button>
+      </div>
+    </div>
+    <div class="conn${off ? ' off' : ''}" data-id="${s.id}">${connLabel}
+      <select data-f="trans">${optHtml(s.trans)}</select>
+      <input type="number" data-f="dur" min="0.1" max="10" step="0.1" value="${s.dur}"> 秒
+    </div>`;
+  }).join('');
+}
+const byId = id => S.slides.find(s => s.id === +id);
+function move(from, to) {
+  if (to < 0 || to >= S.slides.length || from === to) return;
+  const [x] = S.slides.splice(from, 1); S.slides.splice(to, 0, x);
+  renderList(); refresh();
+}
+$('#slides').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const id = b.closest('[data-id]').dataset.id, i = S.slides.findIndex(s => s.id === +id);
+  const act = b.dataset.act;
+  if (act === 'up') move(i, i - 1);
+  else if (act === 'down') move(i, i + 1);
+  else if (act === 'dup') {
+    const s = S.slides[i]; S.slides.splice(i + 1, 0, {...s, id: ++uid, cache: {}});
+    renderList(); refresh();
+  } else if (act === 'del') {
+    const [s] = S.slides.splice(i, 1);
+    if (s.url.startsWith('blob:') && !S.slides.some(o => o.url === s.url)) URL.revokeObjectURL(s.url);
+    renderList(); refresh();
+  }
+});
+$('#slides').addEventListener('input', e => {
+  const f = e.target.dataset.f; if (!f) return;
+  const s = byId(e.target.closest('[data-id]').dataset.id); if (!s) return;
+  if (f === 'trans') s.trans = e.target.value;
+  else if (f === 'hold') s.hold = num(e.target, 0.1, 60, 1.5);
+  else if (f === 'dur') s.dur = num(e.target, 0.1, 10, 0.8);
+  refresh();
+});
+$('#slides').addEventListener('dragstart', e => {
+  const g = e.target.closest('.grip'); if (!g) return;
+  const card = g.closest('.slide');
+  dragId = +card.dataset.id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'x');
+  e.dataTransfer.setDragImage(card, 20, 20);
+});
+$('#slides').addEventListener('dragover', e => {
+  if (dragId == null) return;
+  const card = e.target.closest('.slide'); if (!card) return;
+  e.preventDefault();
+  document.querySelectorAll('.slide.dragover').forEach(x => x.classList.remove('dragover'));
+  card.classList.add('dragover');
+});
+$('#slides').addEventListener('drop', e => {
+  if (dragId == null) return;
+  const card = e.target.closest('.slide'); if (!card) return;
+  e.preventDefault(); e.stopPropagation();
+  const from = S.slides.findIndex(s => s.id === dragId), to = S.slides.findIndex(s => s.id === +card.dataset.id);
+  dragId = null; move(from, to);
+});
+$('#slides').addEventListener('dragend', () => {
+  dragId = null; document.querySelectorAll('.slide.dragover').forEach(x => x.classList.remove('dragover'));
+});
+
+/* ---------- 画像追加まわりの入力 ---------- */
+$('#addBtn').onclick = () => $('#file').click();
+$('#file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+$('#sampleBtn').onclick = addSamples;
+const drop = $('#drop');
+window.addEventListener('dragover', e => {
+  if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); drop.classList.add('over'); }
+});
+window.addEventListener('dragleave', e => { if (!e.relatedTarget) drop.classList.remove('over'); });
+window.addEventListener('drop', e => {
+  drop.classList.remove('over');
+  if (e.dataTransfer?.files?.length) { e.preventDefault(); addFiles(e.dataTransfer.files); }
+});
+window.addEventListener('paste', e => {
+  const fs = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+  if (fs.length) { e.preventDefault(); addFiles(fs); }
+});
+
+/* ---------- 一括設定 ---------- */
+$('#bTrans').innerHTML = optHtml('fade');
+function readBulk() {
+  S.def = {hold: num($('#bHold'), 0.1, 60, 1.5), trans: $('#bTrans').value, dur: num($('#bDur'), 0.1, 10, 0.8)};
+}
+['#bHold', '#bTrans', '#bDur'].forEach(id => $(id).addEventListener('input', readBulk));
+$('#bApply').onclick = () => {
+  readBulk();
+  S.slides.forEach(s => { s.hold = S.def.hold; s.trans = S.def.trans; s.dur = S.def.dur; });
+  renderList(); refresh();
+};
+$('#bReroll').onclick = () => { S.seed = (Math.random() * 1000) | 0; refresh(); toast('ランダムの演出を振り直しました'); };
+
+/* ---------- 全体設定 ---------- */
+function readGlobal() {
+  S.W = Math.round(num($('#sw'), 16, 4096, 640));
+  S.H = Math.round(num($('#sh'), 16, 4096, 360));
+  S.fit = $('#fit').value; S.bg = $('#bg').value; S.transparent = $('#trans').checked;
+  S.loopBack = $('#loopBack').checked; S.easing = $('#easing').value;
+  $('#bg').disabled = S.transparent;
+}
+['#sw', '#sh', '#fit', '#bg', '#trans', '#easing'].forEach(id => $(id).addEventListener('input', () => { readGlobal(); refresh(); }));
+$('#loopBack').addEventListener('input', () => { readGlobal(); renderList(); refresh(); });
+$('#preset').onchange = e => {
+  const v = e.target.value; if (!v) return;
+  const [w, h] = v.split('x').map(Number); S.W = w; S.H = h; syncSizeInputs(); e.target.value = ''; refresh();
+};
+$('#fitFirst').onclick = () => { fitToFirst(); refresh(); };
+
+/* ---------- 画像のはめ込み ---------- */
+function fitted(s, W, H) {
+  const key = [W, H, S.fit, S.transparent ? 't' : S.bg].join('|');
+  if (s.cache[key]) return s.cache[key];
+  if (Object.keys(s.cache).length >= 3) s.cache = {};
+  const c = mk(W, H), x = c.getContext('2d');
+  if (!S.transparent) { x.fillStyle = S.bg; x.fillRect(0, 0, W, H); }
+  let dw = W, dh = H;
+  if (S.fit !== 'stretch') {
+    const r = S.fit === 'cover' ? Math.max(W / s.w, H / s.h) : Math.min(W / s.w, H / s.h);
+    dw = s.w * r; dh = s.h * r;
+  }
+  x.imageSmoothingQuality = 'high';
+  x.drawImage(s.img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  return s.cache[key] = c;
+}
+
+/* ---------- タイムライン ---------- */
+function pickRandom(i) { return POOL[(i * 7 + 3 + S.seed) % POOL.length]; }
+function buildTimeline() {
+  const segs = [], n = S.slides.length; let t = 0;
+  for (let i = 0; i < n; i++) {
+    const s = S.slides[i];
+    segs.push({type: 'hold', i, start: t, dur: s.hold}); t += s.hold;
+    const hasNext = i < n - 1 || (S.loopBack && n > 1);
+    if (hasNext && s.trans !== 'cut' && s.dur > 0) {
+      segs.push({type: 'trans', i, j: (i + 1) % n, kind: s.trans === 'random' ? pickRandom(i) : s.trans, start: t, dur: s.dur});
+      t += s.dur;
+    }
+  }
+  return {segs, total: t};
+}
+function findSeg(t) {
+  const segs = tl.segs;
+  for (const g of segs) if (t < g.start + g.dur) return g;
+  return segs[segs.length - 1];
+}
+function framePlan(fps) {
+  const out = [];
+  for (const g of tl.segs) {
+    if (g.type === 'hold') { out.push({t: g.start, d: Math.round(g.dur * 1000)}); continue; }
+    const n = Math.max(1, Math.round(g.dur * fps)), D = g.dur * 1000;
+    for (let k = 0; k < n; k++) {
+      out.push({t: g.start + g.dur * (k + 1) / (n + 1), d: Math.round((k + 1) * D / n) - Math.round(k * D / n)});
+    }
+  }
+  out.forEach(f => f.d = Math.max(20, f.d));
+  return out;
+}
+
+/* ---------- 描画 ---------- */
+const scratch = mk(2, 2), pxCan = mk(2, 2);
+function renderAt(ctx, W, H, t) {
+  const g = findSeg(t);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  if (!S.transparent) { ctx.fillStyle = S.bg; ctx.fillRect(0, 0, W, H); }
+  if (g.type === 'hold') { ctx.drawImage(fitted(S.slides[g.i], W, H), 0, 0); return; }
+  if (scratch.width !== W || scratch.height !== H) { scratch.width = W; scratch.height = H; }
+  const sx = scratch.getContext('2d');
+  sx.setTransform(1, 0, 0, 1, 0, 0); sx.globalAlpha = 1; sx.globalCompositeOperation = 'source-over';
+  sx.filter = 'none'; sx.clearRect(0, 0, W, H);
+  const p = EASE[S.easing](clamp((t - g.start) / g.dur, 0, 1));
+  drawTransition(sx, W, H, fitted(S.slides[g.i], W, H), fitted(S.slides[g.j], W, H), p, g.kind);
+  ctx.drawImage(scratch, 0, 0);
+}
+function drawTransition(ctx, W, H, A, B, p, kind) {
+  ctx.save();
+  const m = kind.match(/^(slide|cover|wipe)([RLBT])$/);
+  const scaled = (c, s) => ctx.drawImage(c, W / 2 - W * s / 2, H / 2 - H * s / 2, W * s, H * s);
+  const crossfade = () => {
+    ctx.globalAlpha = 1 - p; ctx.drawImage(A, 0, 0);
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = p; ctx.drawImage(B, 0, 0);
+  };
+  if (m) {
+    const [dx, dy] = VEC[m[2]];
+    if (m[1] === 'slide') {
+      ctx.drawImage(A, -dx * W * p, -dy * H * p);
+      ctx.drawImage(B, dx * W * (1 - p), dy * H * (1 - p));
+    } else if (m[1] === 'cover') {
+      ctx.drawImage(A, 0, 0);
+      ctx.drawImage(B, dx * W * (1 - p), dy * H * (1 - p));
+    } else {
+      ctx.drawImage(A, 0, 0);
+      ctx.beginPath();
+      ctx.rect(dx > 0 ? W * (1 - p) : 0, dy > 0 ? H * (1 - p) : 0, dx ? W * p : W, dy ? H * p : H);
+      ctx.clip(); ctx.drawImage(B, 0, 0);
+    }
+  } else switch (kind) {
+    case 'fade': crossfade(); break;
+    case 'dipblack': case 'dipwhite': {
+      ctx.drawImage(p < .5 ? A : B, 0, 0);
+      ctx.globalAlpha = 1 - Math.abs(p - .5) * 2;
+      ctx.fillStyle = kind === 'dipblack' ? '#000' : '#fff'; ctx.fillRect(0, 0, W, H);
+      break;
+    }
+    case 'zoomIn':
+      ctx.globalAlpha = 1 - p; scaled(A, 1 + .4 * p);
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = p; scaled(B, .75 + .25 * p);
+      break;
+    case 'zoomOut':
+      ctx.globalAlpha = 1 - p; scaled(A, 1 - .3 * p);
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = p; scaled(B, 1.3 - .3 * p);
+      break;
+    case 'circle': case 'circleClose': {
+      const R = Math.hypot(W, H) / 2;
+      const [under, over, r] = kind === 'circle' ? [A, B, R * p] : [B, A, R * (1 - p)];
+      ctx.drawImage(under, 0, 0);
+      ctx.beginPath(); ctx.arc(W / 2, H / 2, Math.max(0, r), 0, Math.PI * 2); ctx.clip();
+      ctx.drawImage(over, 0, 0);
+      break;
+    }
+    case 'blindsV': case 'blindsH': {
+      ctx.drawImage(A, 0, 0);
+      const n = 8; ctx.beginPath();
+      for (let k = 0; k < n; k++) {
+        if (kind === 'blindsV') ctx.rect(k * W / n, 0, W / n * p, H);
+        else ctx.rect(0, k * H / n, W, H / n * p);
+      }
+      ctx.clip(); ctx.drawImage(B, 0, 0);
+      break;
+    }
+    case 'blur': {
+      if (!('filter' in ctx)) { crossfade(); break; }
+      const bl = W / 800 * 24, a = bl * p, b = bl * (1 - p), ma = a * 2, mb = b * 2;
+      ctx.filter = `blur(${a}px)`; ctx.globalAlpha = 1 - p;
+      ctx.drawImage(A, -ma, -ma, W + ma * 2, H + ma * 2);
+      ctx.filter = `blur(${b}px)`; ctx.globalAlpha = p; ctx.globalCompositeOperation = 'lighter';
+      ctx.drawImage(B, -mb, -mb, W + mb * 2, H + mb * 2);
+      break;
+    }
+    case 'pixelate': {
+      const f = p < .5 ? p * 2 : (1 - p) * 2, sz = Math.max(1, Math.round(1 + f * Math.max(8, W / 18)));
+      const w = Math.max(1, Math.ceil(W / sz)), h = Math.max(1, Math.ceil(H / sz));
+      pxCan.width = w; pxCan.height = h;
+      pxCan.getContext('2d').drawImage(p < .5 ? A : B, 0, 0, w, h);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(pxCan, 0, 0, w, h, 0, 0, w * sz, h * sz);
+      break;
+    }
+    case 'flip': {
+      const sc = p < .5 ? 1 - 2 * p : 2 * p - 1;
+      if (sc > .003) ctx.drawImage(p < .5 ? A : B, (W - W * sc) / 2, 0, W * sc, H);
+      break;
+    }
+    default: crossfade();
+  }
+  ctx.restore();
+}
+
+/* ---------- プレビュー ---------- */
+const pv = $('#pv'), pctx = pv.getContext('2d');
+let playing = true, cur = 0, lastT = performance.now();
+function previewSize() {
+  const w = Math.min(S.W, 720); return [w, Math.max(1, Math.round(w * S.H / S.W))];
+}
+function refresh() {
+  tl = buildTimeline();
+  const [w, h] = previewSize();
+  if (pv.width !== w || pv.height !== h) { pv.width = w; pv.height = h; }
+  if (tl.total > 0) cur = cur % tl.total; else cur = 0;
+  const n = S.slides.length;
+  $('#export').disabled = !n;
+  if (!n) { $('#stats').textContent = ''; return; }
+  const frames = framePlan(+$('#fps').value).length;
+  const warn = frames > 400 ? ` <span class="warn">フレームが多いので、ファイルが大きくなります</span>` : '';
+  $('#stats').innerHTML = `全体 ${tl.total.toFixed(1)} 秒 ／ 書き出しのコマ数 ${frames} 枚 ／ ${S.W}×${S.H}px${warn}`;
+}
+function tick(now) {
+  const dt = Math.min(0.5, (now - lastT) / 1000); lastT = now;
+  if (playing && tl.total > 0) { cur += dt; if (cur >= tl.total) cur %= tl.total; }
+  if (S.slides.length) {
+    renderAt(pctx, pv.width, pv.height, cur);
+    if (playing) $('#scrub').value = Math.round(cur / tl.total * 1000);
+    $('#tlabel').textContent = `${cur.toFixed(1)} / ${tl.total.toFixed(1)} 秒`;
+  } else {
+    pctx.clearRect(0, 0, pv.width, pv.height);
+    pctx.fillStyle = '#f08aa8'; pctx.font = `${Math.round(pv.width / 24)}px "Zen Maru Gothic",sans-serif`;
+    pctx.textAlign = 'center'; pctx.fillText('画像を追加するとここに表示されます', pv.width / 2, pv.height / 2);
+    $('#tlabel').textContent = '0.0 / 0.0 秒';
+  }
+  requestAnimationFrame(tick);
+}
+$('#play').onclick = () => { playing = !playing; $('#play').textContent = playing ? '⏸ 停止' : '▶ 再生'; };
+$('#scrub').addEventListener('input', e => {
+  playing = false; $('#play').textContent = '▶ 再生';
+  cur = e.target.value / 1000 * tl.total;
+});
+$('#fps').addEventListener('input', refresh);
+
+/* ---------- 書き出し設定 ---------- */
+document.querySelectorAll('[name=fmt]').forEach(r => r.addEventListener('input', () => {
+  $('#qrow').style.display = fmt() === 'webp' ? '' : 'none';
+}));
+const fmt = () => document.querySelector('[name=fmt]:checked').value;
+$('#quality').addEventListener('input', e => $('#qval').textContent = e.target.value);
+
+/* ---------- バイナリ処理 ---------- */
+const CRCT = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(u8) { let c = 0xffffffff; for (let i = 0; i < u8.length; i++) c = CRCT[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+const ascii = s => Uint8Array.from(s, c => c.charCodeAt(0));
+const tag = (u8, o) => String.fromCharCode(u8[o], u8[o + 1], u8[o + 2], u8[o + 3]);
+function concat(parts) {
+  let n = 0; for (const p of parts) n += p.length;
+  const out = new Uint8Array(n); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; }
+  return out;
+}
+
+/* APNG */
+function pngChunk(type, data) {
+  const out = new Uint8Array(12 + data.length), dv = new DataView(out.buffer);
+  dv.setUint32(0, data.length); out.set(ascii(type), 4); out.set(data, 8);
+  dv.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length)));
+  return out;
+}
+function parsePng(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), out = [];
+  let pos = 8;
+  while (pos + 12 <= u8.length) {
+    const len = dv.getUint32(pos);
+    out.push({type: tag(u8, pos + 4), data: u8.subarray(pos + 8, pos + 8 + len)});
+    pos += 12 + len;
+  }
+  return out;
+}
+function makeApng(frames, W, H, loops) {
+  const parts = [Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])];
+  const first = parsePng(frames[0].data).find(c => c.type === 'IHDR').data;
+  parts.push(pngChunk('IHDR', first));
+  const actl = new DataView(new ArrayBuffer(8)); actl.setUint32(0, frames.length); actl.setUint32(4, loops);
+  parts.push(pngChunk('acTL', new Uint8Array(actl.buffer)));
+  let seq = 0;
+  frames.forEach((f, i) => {
+    const ch = parsePng(f.data), ih = ch.find(c => c.type === 'IHDR').data;
+    if (ih.length !== first.length || ih.some((v, k) => v !== first[k])) throw new Error('フレームの形式がそろいませんでした');
+    const fc = new DataView(new ArrayBuffer(26));
+    fc.setUint32(0, seq++); fc.setUint32(4, W); fc.setUint32(8, H); fc.setUint32(12, 0); fc.setUint32(16, 0);
+    fc.setUint16(20, clamp(f.d, 1, 65535)); fc.setUint16(22, 1000); fc.setUint8(24, 0); fc.setUint8(25, 0);
+    parts.push(pngChunk('fcTL', new Uint8Array(fc.buffer)));
+    for (const c of ch.filter(c => c.type === 'IDAT')) {
+      if (i === 0) parts.push(pngChunk('IDAT', c.data));
+      else {
+        const d = new Uint8Array(4 + c.data.length);
+        new DataView(d.buffer).setUint32(0, seq++); d.set(c.data, 4);
+        parts.push(pngChunk('fdAT', d));
+      }
+    }
+  });
+  parts.push(pngChunk('IEND', new Uint8Array(0)));
+  return new Blob(parts, {type: 'image/png'});
+}
+
+/* アニメWebP */
+function riffChunk(type, data) {
+  const pad = data.length & 1, out = new Uint8Array(8 + data.length + pad);
+  out.set(ascii(type), 0); new DataView(out.buffer).setUint32(4, data.length, true); out.set(data, 8);
+  return out;
+}
+function parseWebp(u8) {
+  if (tag(u8, 0) !== 'RIFF' || tag(u8, 8) !== 'WEBP') throw new Error('WebPとして書き出せませんでした');
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), out = [];
+  let pos = 12;
+  while (pos + 8 <= u8.length) {
+    const len = dv.getUint32(pos + 4, true);
+    out.push({type: tag(u8, pos), data: u8.subarray(pos + 8, pos + 8 + len)});
+    pos += 8 + len + (len & 1);
+  }
+  return out;
+}
+function le24(dv, o, v) { dv.setUint8(o, v & 255); dv.setUint8(o + 1, (v >> 8) & 255); dv.setUint8(o + 2, (v >> 16) & 255); }
+function makeWebp(frames, W, H, loops) {
+  let alpha = false;
+  const anmf = frames.map(f => {
+    const ch = parseWebp(f.data), keep = [];
+    for (const c of ch) {
+      if (c.type === 'VP8X' && (c.data[0] & 0x10)) alpha = true;
+      if (c.type === 'ALPH') alpha = true;
+      if (c.type === 'VP8L' && c.data.length >= 5 && ((c.data[1] | c.data[2] << 8 | c.data[3] << 16 | c.data[4] << 24) >>> 28 & 1)) alpha = true;
+      if (c.type === 'ALPH' || c.type === 'VP8 ' || c.type === 'VP8L') keep.push(riffChunk(c.type, c.data));
+    }
+    const h = new DataView(new ArrayBuffer(16));
+    le24(h, 6, W - 1); le24(h, 9, H - 1); le24(h, 12, clamp(f.d, 1, 0xffffff));
+    h.setUint8(15, 2); // 重ね合わせなし・破棄なし
+    return riffChunk('ANMF', concat([new Uint8Array(h.buffer), ...keep]));
+  });
+  const vx = new DataView(new ArrayBuffer(10));
+  vx.setUint8(0, 0x02 | (alpha ? 0x10 : 0)); le24(vx, 4, W - 1); le24(vx, 7, H - 1);
+  const an = new DataView(new ArrayBuffer(6)); an.setUint16(4, loops, true);
+  const body = concat([ascii('WEBP'), riffChunk('VP8X', new Uint8Array(vx.buffer)), riffChunk('ANIM', new Uint8Array(an.buffer)), ...anmf]);
+  const head = new Uint8Array(8); head.set(ascii('RIFF'), 0); new DataView(head.buffer).setUint32(4, body.length, true);
+  return new Blob([head, body], {type: 'image/webp'});
+}
+
+/* ---------- 書き出し ---------- */
+let resultUrl = null, busy = false;
+const loopCount = () => document.querySelector('[name=loopmode]:checked').value === 'inf' ? 0 : Math.round(num($('#loops'), 1, 1000, 1));
+document.querySelectorAll('[name=loopmode]').forEach(r => r.addEventListener('input', () => {
+  $('#loopN').style.display = document.querySelector('[name=loopmode]:checked').value === 'n' ? '' : 'none';
+}));
+
+async function encodeOnce(type, W, H, fps, q, loops, label) {
+  const mime = type === 'webp' ? 'image/webp' : 'image/png';
+  const plan = framePlan(fps), cv = mk(W, H), cx = cv.getContext('2d'), frames = [];
+  for (let k = 0; k < plan.length; k++) {
+    renderAt(cx, W, H, plan[k].t);
+    const blob = await new Promise(r => cv.toBlob(r, mime, q));
+    if (!blob) throw new Error('画像の書き出しに失敗しました');
+    if (blob.type !== mime) throw new Error('このブラウザでは WebP を書き出せません。Chrome・Edge・Firefox で開くか、APNG を選んでください。');
+    frames.push({data: new Uint8Array(await blob.arrayBuffer()), d: plan[k].d});
+    $('#barIn').style.width = `${Math.round((k + 1) / plan.length * 100)}%`;
+    $('#status').textContent = `${label}（${k + 1}/${plan.length}）`;
+    if (k % 4 === 3) await new Promise(r => setTimeout(r));
+  }
+  const blob = type === 'webp' ? makeWebp(frames, W, H, loops) : makeApng(frames, W, H, loops);
+  return {blob, count: plan.length};
+}
+
+async function doExport() {
+  if (busy || !S.slides.length) return;
+  busy = true;
+  const btn = $('#export'), err = $('#err'), bar = $('#bar');
+  btn.disabled = true; err.hidden = true; bar.hidden = false; $('#barIn').style.width = '0';
+  const type = fmt(), loops = loopCount();
+  const limit = $('#capOn').checked ? num($('#cap'), 0.1, 100, 5) * 1024 * 1024 : Infinity;
+  let W = S.W, H = S.H, fps = +$('#fps').value, q = +$('#quality').value / 100;
+  const W0 = W, fps0 = fps, q0 = q, notes = [];
+  try {
+    let res = null;
+    for (let attempt = 1; attempt <= 8; attempt++) {
+      res = await encodeOnce(type, W, H, fps, q, loops, attempt === 1 ? '書き出し中' : `容量を調整して再書き出し中（${attempt}回目）`);
+      const size = res.blob.size;
+      if (size <= limit) break;
+      if (attempt === 8) break;
+      const ratio = limit / size;
+      if (type === 'webp' && q > 0.4) {
+        q = Math.max(0.4, ratio < 0.5 ? q * 0.6 : q * 0.8);
+      } else if (fps > 10 && ratio < 0.5 && fps === fps0) {
+        fps = Math.max(10, Math.round(fps * 0.6));
+      } else {
+        const s = Math.sqrt(ratio) * 0.93;
+        const nw = Math.max(16, Math.round(W * s)), nh = Math.max(16, Math.round(H * s));
+        if (nw === W && nh === H) break;
+        W = nw; H = nh;
+      }
+    }
+    if (q !== q0) notes.push(`画質 ${Math.round(q0 * 100)}→${Math.round(q * 100)}`);
+    if (fps !== fps0) notes.push(`${fps0}→${fps}fps`);
+    if (W !== W0) notes.push(`サイズ ${W0}×${S.H}→${W}×${H}`);
+    if (resultUrl) URL.revokeObjectURL(resultUrl);
+    resultUrl = URL.createObjectURL(res.blob);
+    $('#resImg').src = resultUrl;
+    const kb = res.blob.size / 1024, sizeText = kb > 1024 ? `${(kb / 1024).toFixed(2)} MB` : `${kb.toFixed(0)} KB`;
+    const over = res.blob.size > limit;
+    $('#resInfo').innerHTML = `${type === 'webp' ? 'アニメWebP' : 'APNG'} ／ ${W}×${H}px ／ ${res.count}コマ ／ ${sizeText}` +
+      (notes.length ? `<br><small class="hint">容量に合わせて調整：${notes.join('、')}</small>` : '') +
+      (over ? `<br><span class="warn">上限に収まりませんでした。画像の枚数や秒数を減らしてみてください。</span>` : '');
+    const dl = $('#dl'); dl.href = resultUrl; dl.download = type === 'webp' ? 'kirikae.webp' : 'kirikae.png';
+    $('#result').style.display = 'block';
+    $('#result').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  } catch (e) {
+    err.textContent = e.message || String(e); err.hidden = false;
+  } finally {
+    busy = false; btn.disabled = !S.slides.length; $('#status').textContent = '';
+    setTimeout(() => { bar.hidden = true; }, 600);
+  }
+}
+$('#export').onclick = doExport;
+
+/* ---------- 起動 ---------- */
+readGlobal(); syncSizeInputs(); renderList(); refresh();
+$('#qrow').style.display = '';
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
