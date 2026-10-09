@@ -76,6 +76,9 @@ small.hint{color:var(--muted);font-size:12px}
 .addrow small{flex-basis:100%}
 .bulk{background:var(--pink-pale);border:2px dashed var(--line);border-radius:12px;padding:7px 10px;margin-bottom:10px}
 .bulk .row{margin:0}
+.edge{display:flex;flex-wrap:wrap;gap:3px 8px;align-items:center;font-size:12.5px;color:var(--pink-deep);padding:5px 8px;margin:0 2px 6px;background:var(--pink-pale);border:2px dashed var(--line);border-radius:12px}
+.edge:last-child{margin:6px 2px 0}
+.edge input{font-weight:400}
 .slides{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding:2px 4px 6px 2px}
 .slide{background:#fff;border:2px solid var(--line);border-radius:12px;padding:7px 8px;display:grid;grid-template-columns:auto 84px minmax(0,1fr);gap:4px 8px;align-items:center}
 .slide.dragover{border-color:var(--pink-deep);background:var(--pink-pale)}
@@ -176,7 +179,17 @@ ul.tips li{margin-bottom:5px}
         <button class="btn ghost sm" id="bReroll" type="button">ランダムを振り直す</button>
       </div>
     </div>
+    <div class="edge"><b>▶ はじまり</b>
+      <button class="tbtn" id="introBtn" type="button"></button>
+      <input type="number" id="introDur" min="0.1" max="10" step="0.1" value="0.8">秒
+      <small class="hint">最初の画像が現れる演出</small>
+    </div>
     <div class="slides" id="slides"></div>
+    <div class="edge"><b>■ おわり</b>
+      <button class="tbtn" id="outroBtn" type="button"></button>
+      <input type="number" id="outroDur" min="0.1" max="10" step="0.1" value="0.8">秒
+      <small class="hint">最後の画像が消える演出</small>
+    </div>
   </div>
 
   <!-- 中：プレビュー -->
@@ -222,7 +235,7 @@ ul.tips li{margin-bottom:5px}
       <label class="chk"><input type="checkbox" id="trans"> 透明にする</label>
     </div>
     <div class="row"><b>つなぎ</b>
-      <label class="chk"><input type="checkbox" id="loopBack" checked> 最後→最初にも切り替えを入れる</label>
+      <label class="chk"><input type="checkbox" id="loopBack"> 最後→最初にも切り替えを入れる</label>
     </div>
     <div class="row"><b>動きの緩急</b>
       <select id="easing">
@@ -283,6 +296,7 @@ ul.tips li{margin-bottom:5px}
     <h3>メモ・使い方 <button class="btn ghost sm" type="button" data-close>閉じる</button></h3>
     <ul class="tips">
       <li>画像を追加して、表示時間と「次への切り替え演出」を決め、書き出すだけです。演出は見た目で選べます。</li>
+      <li>「はじまり」「おわり」で、最初の画像が現れる演出・最後の画像が消える演出も付けられます（画像が1枚でもOK）。「おわり」を付けると、「最後→最初」の切り替えは使われません。</li>
       <li>画像は外部に送信されません。このページを閉じると、並べた内容は消えます。</li>
       <li>表示している間は1コマにまとめて書き出すので、止まっている時間が長くても容量は増えません。</li>
       <li>容量の上限を超えたときは、画質→fps→サイズの順に自動で下げて書き出し直します。</li>
@@ -325,7 +339,8 @@ const EASE = {
 /* ---------- 状態 ---------- */
 const S = {
   slides: [], W: 640, H: 360, fit: 'contain', bg: '#ffffff', transparent: false,
-  loopBack: true, easing: 'inout', seed: 0,
+  loopBack: false, easing: 'inout', seed: 0,
+  intro: {trans: 'cut', dur: 0.8}, outro: {trans: 'cut', dur: 0.8},
   def: {hold: 1.5, trans: 'fade', dur: 0.8},
 };
 let uid = 0, tl = {segs: [], total: 0};
@@ -393,7 +408,7 @@ function renderList() {
   if (!n) { box.innerHTML = '<div class="empty">まだ画像がありません。上のボタンから追加してください。</div>'; return; }
   box.innerHTML = S.slides.map((s, i) => {
     const last = i === n - 1;
-    const off = last && !S.loopBack;
+    const off = last && (!S.loopBack || edgeOn(S.outro));
     return `<div class="slide${off ? ' off' : ''}" data-id="${s.id}">
       <span class="grip" draggable="true" title="ドラッグで並べ替え">⠿</span>
       <div class="thumb"><img src="${s.url}" alt=""><span class="idx">${i + 1}</span></div>
@@ -494,6 +509,16 @@ const transName = k => (TRANS.find(t => t[0] === k) || [0, k])[1];
 function setBulkTrans(k) { S.def.trans = k; $('#bTransBtn').innerHTML = `${transName(k)}<i>▼</i>`; }
 setBulkTrans('fade');
 $('#bTransBtn').onclick = () => openPicker(S.def.trans, setBulkTrans);
+function setEdge(which, k, init) {
+  S[which].trans = k;
+  $(`#${which}Btn`).innerHTML = `${k === 'cut' ? 'なし' : transName(k)}<i>▼</i>`;
+  if (!init) { renderList(); refresh(); }
+}
+for (const w of ['intro', 'outro']) {
+  $(`#${w}Btn`).onclick = () => openPicker(S[w].trans, k => setEdge(w, k));
+  $(`#${w}Dur`).addEventListener('input', e => { S[w].dur = num(e.target, 0.1, 10, 0.8); refresh(); });
+  setEdge(w, 'cut', true);
+}
 function readBulk() {
   S.def.hold = num($('#bHold'), 0.1, 60, 1.5); S.def.dur = num($('#bDur'), 0.1, 10, 0.8);
 }
@@ -590,11 +615,15 @@ function fitted(s, W, H) {
 
 /* ---------- タイムライン ---------- */
 function pickRandom(i) { return POOL[(i * 7 + 3 + S.seed) % POOL.length]; }
+const edgeOn = e => e.trans !== 'cut' && e.dur > 0;
+const edgeKind = (e, k) => e.trans === 'random' ? pickRandom(k) : e.trans;
 function buildTimeline() {
   const segs = [], n = S.slides.length; let t = 0;
+  if (n && edgeOn(S.intro)) { segs.push({type: 'trans', i: -1, j: 0, kind: edgeKind(S.intro, 50), start: t, dur: S.intro.dur}); t += S.intro.dur; }
   for (let i = 0; i < n; i++) {
     const s = S.slides[i];
     segs.push({type: 'hold', i, start: t, dur: s.hold}); t += s.hold;
+    if (i === n - 1 && edgeOn(S.outro)) { segs.push({type: 'trans', i, j: -1, kind: edgeKind(S.outro, 51), start: t, dur: S.outro.dur}); t += S.outro.dur; continue; }
     const hasNext = i < n - 1 || (S.loopBack && n > 1);
     if (hasNext && s.trans !== 'cut' && s.dur > 0) {
       segs.push({type: 'trans', i, j: (i + 1) % n, kind: s.trans === 'random' ? pickRandom(i) : s.trans, start: t, dur: s.dur});
@@ -623,6 +652,15 @@ function framePlan(fps) {
 
 /* ---------- 描画 ---------- */
 const scratch = mk(2, 2), pxCan = mk(2, 2);
+let blankC = null;
+function blank(W, H) {   // 何もない状態（背景色、または透明）
+  const key = [W, H, S.transparent ? 't' : S.bg].join('|');
+  if (blankC && blankC.key === key) return blankC.c;
+  const c = mk(W, H);
+  if (!S.transparent) { const x = c.getContext('2d'); x.fillStyle = S.bg; x.fillRect(0, 0, W, H); }
+  blankC = {key, c};
+  return c;
+}
 function renderAt(ctx, W, H, t) {
   const g = findSeg(t);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -634,7 +672,8 @@ function renderAt(ctx, W, H, t) {
   sx.setTransform(1, 0, 0, 1, 0, 0); sx.globalAlpha = 1; sx.globalCompositeOperation = 'source-over';
   sx.filter = 'none'; sx.clearRect(0, 0, W, H);
   const p = EASE[S.easing](clamp((t - g.start) / g.dur, 0, 1));
-  drawTransition(sx, W, H, fitted(S.slides[g.i], W, H), fitted(S.slides[g.j], W, H), p, g.kind);
+  const pic = k => k < 0 ? blank(W, H) : fitted(S.slides[k], W, H);
+  drawTransition(sx, W, H, pic(g.i), pic(g.j), p, g.kind);
   ctx.drawImage(scratch, 0, 0);
 }
 function drawTransition(ctx, W, H, A, B, p, kind) {
