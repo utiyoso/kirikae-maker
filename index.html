@@ -127,8 +127,8 @@ small.hint{color:var(--muted);font-size:12px}
 .pitem span{display:block;font-size:12.5px;font-weight:700;margin-top:4px}
 ul.tips{margin:0;padding-left:1.2em;color:var(--muted);font-size:14px}
 ul.tips li{margin-bottom:5px}
-.links{margin-top:12px;font-size:13px;color:var(--muted)}
-.links a{margin-right:12px;font-weight:700}
+.foot{flex:none;background:var(--pink-soft);text-align:center;font-size:12.5px;color:var(--muted);padding:4px 20px;line-height:1.5}
+.foot a{margin:0 10px;font-weight:700}
 
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 20px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60}
 .toast.show{opacity:.95}
@@ -197,7 +197,7 @@ ul.tips li{margin-bottom:5px}
     <h3><span class="no">2</span>プレビュー</h3>
     <div class="stagebox"><div class="stage"><canvas id="pv" width="960" height="540"></canvas></div></div>
     <div class="ctrl">
-      <button class="btn ghost sm" id="play" type="button">⏸ 停止</button>
+      <button class="btn ghost sm" id="play" type="button" aria-label="停止" style="min-width:42px;white-space:nowrap">⏸</button>
       <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="再生位置">
       <span class="time" id="tlabel">0.0 / 0.0 秒</span>
     </div>
@@ -282,6 +282,13 @@ ul.tips li{margin-bottom:5px}
   </div>
 </main>
 
+<footer class="foot">
+  <a href="https://utiyoso.github.io/" target="_blank" rel="noopener">他ツール一覧</a>
+  <a href="https://utiyoso-uy.booth.pm/" target="_blank" rel="noopener">BOOTH</a>
+  <a href="https://x.com/utiyoso_uy" target="_blank" rel="noopener">X @utiyoso_uy</a>
+  <span>© うちよそ研究所</span>
+</footer>
+
 <!-- 演出えらび -->
 <div class="ov" id="pickOv">
   <div class="dlg">
@@ -304,12 +311,6 @@ ul.tips li{margin-bottom:5px}
       <li>APNG は「.png」の名前で保存されます。動いて見えるかどうかは、表示する側の対応しだいです。</li>
       <li>GIFなど動きのある画像を入れたときは、最初の1コマだけが使われます。</li>
     </ul>
-    <div class="links">
-      <a href="https://utiyoso-uy.booth.pm/" target="_blank" rel="noopener">BOOTH</a>
-      <a href="https://x.com/utiyoso_uy" target="_blank" rel="noopener">X @utiyoso_uy</a>
-      <a href="../scenario-manager/">scenario_manager</a>
-      <span>© うちよそ研究所</span>
-    </div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -793,9 +794,9 @@ function tick(now) {
   }
   requestAnimationFrame(tick);
 }
-$('#play').onclick = () => { playing = !playing; $('#play').textContent = playing ? '⏸ 停止' : '▶ 再生'; };
+$('#play').onclick = () => { playing = !playing; $('#play').textContent = playing ? '⏸' : '▶'; $('#play').setAttribute('aria-label', playing ? '停止' : '再生'); };
 $('#scrub').addEventListener('input', e => {
-  playing = false; $('#play').textContent = '▶ 再生';
+  playing = false; $('#play').textContent = '▶'; $('#play').setAttribute('aria-label', '再生');
   cur = e.target.value / 1000 * tl.total;
 });
 $('#fps').addEventListener('input', refresh);
