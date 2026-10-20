@@ -780,25 +780,38 @@ function refresh() {
   $('#stats').innerHTML = `全体 ${tl.total.toFixed(1)} 秒 ／ 書き出しのコマ数 ${frames} 枚 ／ ${S.W}×${S.H}px${warn}`;
 }
 function tick(now) {
-  const dt = Math.min(0.5, (now - lastT) / 1000); lastT = now;
-  if (playing && tl.total > 0) { cur += dt; if (cur >= tl.total) cur %= tl.total; }
-  if (S.slides.length) {
-    renderAt(pctx, pv.width, pv.height, cur);
-    if (playing) $('#scrub').value = Math.round(cur / tl.total * 1000);
-    $('#tlabel').textContent = `${cur.toFixed(1)} / ${tl.total.toFixed(1)} 秒`;
-  } else {
-    pctx.clearRect(0, 0, pv.width, pv.height);
-    pctx.fillStyle = '#f08aa8'; pctx.font = `${Math.round(pv.width / 24)}px "Zen Maru Gothic",sans-serif`;
-    pctx.textAlign = 'center'; pctx.fillText('画像を追加するとここに表示されます', pv.width / 2, pv.height / 2);
-    $('#tlabel').textContent = '0.0 / 0.0 秒';
+  try {
+    const dt = Math.min(0.5, (now - lastT) / 1000); lastT = now;
+    if (!isFinite(cur)) cur = 0;
+    if (playing && tl.total > 0) { cur += dt; if (cur >= tl.total) cur %= tl.total; }
+    if (S.slides.length) {
+      renderAt(pctx, pv.width, pv.height, cur);
+      if (playing) $('#scrub').value = Math.round(cur / tl.total * 1000);
+      $('#tlabel').textContent = `${cur.toFixed(1)} / ${tl.total.toFixed(1)} 秒`;
+    } else {
+      pctx.clearRect(0, 0, pv.width, pv.height);
+      pctx.fillStyle = '#f08aa8'; pctx.font = `${Math.round(pv.width / 24)}px "Zen Maru Gothic",sans-serif`;
+      pctx.textAlign = 'center'; pctx.fillText('画像を追加するとここに表示されます', pv.width / 2, pv.height / 2);
+      $('#tlabel').textContent = '0.0 / 0.0 秒';
+    }
+  } catch (e) {
+    // 1回の描画エラーで、プレビューが止まったままにならないようにする
+    console.error(e); tl = buildTimeline(); cur = 0;
   }
   requestAnimationFrame(tick);
 }
-$('#play').onclick = () => { playing = !playing; $('#play').textContent = playing ? '⏸' : '▶'; $('#play').setAttribute('aria-label', playing ? '停止' : '再生'); };
+function setPlaying(on) {
+  playing = on; $('#play').textContent = on ? '⏸' : '▶'; $('#play').setAttribute('aria-label', on ? '停止' : '再生');
+}
+$('#play').onclick = () => setPlaying(!playing);
+let resumeAfterScrub = false;
+$('#scrub').addEventListener('pointerdown', () => { resumeAfterScrub = playing; });
 $('#scrub').addEventListener('input', e => {
-  playing = false; $('#play').textContent = '▶'; $('#play').setAttribute('aria-label', '再生');
+  setPlaying(false);
   cur = e.target.value / 1000 * tl.total;
 });
+// つまみを離したら、動かしていたときは再生に戻す
+$('#scrub').addEventListener('change', () => { if (resumeAfterScrub) setPlaying(true); resumeAfterScrub = false; });
 $('#fps').addEventListener('input', refresh);
 
 /* ---------- 書き出し設定 ---------- */
