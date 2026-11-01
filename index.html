@@ -127,6 +127,9 @@ small.hint{color:var(--muted);font-size:12px}
 .pitem span{display:block;font-size:12.5px;font-weight:700;margin-top:4px}
 ul.tips{margin:0;padding-left:1.2em;color:var(--muted);font-size:14px}
 ul.tips li{margin-bottom:5px}
+ol.terms{padding-left:1.4em}
+ol.terms li{margin-bottom:10px}
+ol.terms b{color:var(--ink)}
 .foot{flex:none;background:var(--pink-soft);text-align:center;font-size:12.5px;color:var(--muted);padding:4px 20px;line-height:1.5}
 .foot a{margin:0 10px;font-weight:700}
 
@@ -284,10 +287,27 @@ ul.tips li{margin-bottom:5px}
 
 <footer class="foot">
   <a href="https://utiyoso.github.io/" target="_blank" rel="noopener">他ツール一覧</a>
+  <a href="#terms" id="termsLink">利用規約</a>
   <a href="https://utiyoso-uy.booth.pm/" target="_blank" rel="noopener">BOOTH</a>
   <a href="https://x.com/utiyoso_uy" target="_blank" rel="noopener">X @utiyoso_uy</a>
   <span>© うちよそ研究所</span>
 </footer>
+
+<!-- 利用規約 -->
+<div class="ov" id="termsOv">
+  <div class="dlg" style="max-width:680px">
+    <h3>利用規約 <button class="btn ghost sm" type="button" data-close>閉じる</button></h3>
+    <ol class="tips terms">
+      <li><b>はじめに</b><br>「きりかえメーカー」（以下、本ツール）は、うちよそ研究所が提供する、ブラウザ上で動く無料のツールです。ご利用になった時点で、この規約に同意したものとみなします。</li>
+      <li><b>画像の権利について</b><br>読み込む画像の著作権は、それぞれの権利者にあります。ご自身が使う権利を持っている画像、または使用が許可されている画像だけをお使いください。書き出したアニメ画像の権利は、元の画像の権利者に帰属し、本ツールが権利を主張することはありません。</li>
+      <li><b>画像の取り扱い</b><br>読み込んだ画像や書き出した画像は、お使いのブラウザの中だけで処理します。作者のサーバーへの送信や保存はしません。ページを閉じると、並べた内容は消えます。</li>
+      <li><b>禁止事項</b><br>次の行為はお控えください。<br>・法令や公序良俗に反する目的での利用<br>・他者の権利を侵害する画像の利用<br>・本ツールを悪用して、第三者や作者に迷惑や損害を与える行為</li>
+      <li><b>免責事項</b><br>本ツールは現状のまま提供するもので、すべての環境での動作や、書き出した画像がどのサービス・ソフトでも動いて見えることを保証しません。ご利用によって生じた損害（データの消失、書き出し結果の不具合など）について、作者は責任を負いかねます。</li>
+      <li><b>変更・停止</b><br>本ツールの内容や、この規約は、予告なく変更・停止することがあります。</li>
+      <li><b>お問い合わせ</b><br>不具合のご連絡などは、X（@utiyoso_uy）またはBOOTHからお願いします。</li>
+    </ol>
+  </div>
+</div>
 
 <!-- 演出えらび -->
 <div class="ov" id="pickOv">
@@ -573,6 +593,7 @@ document.querySelectorAll('.ov').forEach(ov => ov.addEventListener('click', e =>
 }));
 window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.ov.show').forEach(closeOv); });
 $('#tipsBtn').onclick = () => $('#tipsOv').classList.add('show');
+$('#termsLink').addEventListener('click', e => { e.preventDefault(); $('#termsOv').classList.add('show'); });
 $('#bApply').onclick = () => {
   readBulk();
   S.slides.forEach(s => { s.hold = S.def.hold; s.trans = S.def.trans; s.dur = S.def.dur; });
